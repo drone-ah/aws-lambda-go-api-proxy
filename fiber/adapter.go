@@ -5,16 +5,15 @@ package fiberadapter
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 
 	"github.com/aws/aws-lambda-go/events"
+	"github.com/awslabs/aws-lambda-go-api-proxy/core"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/utils"
 	"github.com/valyala/fasthttp"
-
-	"github.com/awslabs/aws-lambda-go-api-proxy/core"
 )
 
 // FiberLambda makes it easy to send API Gateway proxy events to a fiber.App.
@@ -63,6 +62,11 @@ func (f *FiberLambda) ProxyWithContextV2(ctx context.Context, req events.APIGate
 	return f.proxyInternalV2(fiberRequest, err)
 }
 
+func ProxyFunctionUrl(ctx context.Context, req events.LambdaFunctionURLRequest) (events.LambdaFunctionURLResponse, error) {
+	fiberRequest, err := f.v2.EventToRequestWithContext(ctx, req)
+	return f.proxyFunctionUrl(fiberRequest, err)
+}
+
 func (f *FiberLambda) proxyInternal(req *http.Request, err error) (events.APIGatewayProxyResponse, error) {
 
 	if err != nil {
@@ -97,13 +101,30 @@ func (f *FiberLambda) proxyInternalV2(req *http.Request, err error) (events.APIG
 	return proxyResponse, nil
 }
 
+func (f *FiberLambda) proxyFunctionUrl(req *http.Request, err error) (events.LambdaFunctionURLResponse, error) {
+
+	if err != nil {
+		return core.FunctionUrlTimeout(), core.NewLoggedError("Could not convert proxy event to request: %v", err)
+	}
+
+	resp := core.NewFunctionUrlResponseWriter()
+	f.adaptor(resp, req)
+
+	functionUrlResponse, err := resp.GetFunctionUrlResponse()
+	if err != nil {
+		return core.FunctionUrlTimeout(), core.NewLoggedError("Error while generating proxy response: %v", err)
+	}
+
+	return functionUrlResponse, nil
+}
+
 func (f *FiberLambda) adaptor(w http.ResponseWriter, r *http.Request) {
 	// New fasthttp request
 	req := fasthttp.AcquireRequest()
 	defer fasthttp.ReleaseRequest(req)
 
 	// Convert net/http -> fasthttp request
-	body, err := ioutil.ReadAll(r.Body)
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, utils.StatusMessage(fiber.StatusInternalServerError), fiber.StatusInternalServerError)
 		return
