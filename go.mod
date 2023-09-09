@@ -83,7 +83,7 @@ require (
 )
 
 replace (
-	github.com/awslabs/aws-lambda-go-api-proxy v0.14.0 => ./
+	github.com/awslabs/aws-lambda-go-api-proxy v0.14.0 => github.com/dza89/aws-lambda-go-api-proxy v0.0.0-20230227230106-06305ac89b48
 	gopkg.in/yaml.v2 v2.2.2 => gopkg.in/yaml.v2 v2.2.8
 	gopkg.in/yaml.v2 v2.2.3 => gopkg.in/yaml.v2 v2.2.8
 	gopkg.in/yaml.v2 v2.2.4 => gopkg.in/yaml.v2 v2.2.8
