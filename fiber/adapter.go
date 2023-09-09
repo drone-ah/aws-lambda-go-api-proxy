@@ -64,7 +64,12 @@ func (f *FiberLambda) ProxyWithContextV2(ctx context.Context, req events.APIGate
 	return f.proxyInternalV2(fiberRequest, err)
 }
 
-func (f *FiberLambda) ProxyFunctionUrl(ctx context.Context, req events.LambdaFunctionURLRequest) (events.LambdaFunctionURLResponse, error) {
+func (f *FiberLambda) ProxyFunctionUrl(req events.LambdaFunctionURLRequest) (events.LambdaFunctionURLResponse, error) {
+	fiberRequest, err := f.fu.EventToRequest(req)
+	return f.proxyFunctionUrl(fiberRequest, err)
+}
+
+func (f *FiberLambda) ProxyFunctionUrlWithContext(ctx context.Context, req events.LambdaFunctionURLRequest) (events.LambdaFunctionURLResponse, error) {
 	fiberRequest, err := f.fu.EventToRequestWithContext(ctx, req)
 	return f.proxyFunctionUrl(fiberRequest, err)
 }
