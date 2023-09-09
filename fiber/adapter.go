@@ -23,7 +23,7 @@ import (
 type FiberLambda struct {
 	core.RequestAccessor
 	v2  core.RequestAccessorV2
-	fu  core.RequestAccessor
+	fu  core.RequestAccessorFu
 	app *fiber.App
 }
 
@@ -64,8 +64,8 @@ func (f *FiberLambda) ProxyWithContextV2(ctx context.Context, req events.APIGate
 	return f.proxyInternalV2(fiberRequest, err)
 }
 
-func ProxyFunctionUrl(ctx context.Context, req events.LambdaFunctionURLRequest) (events.LambdaFunctionURLResponse, error) {
-	fiberRequest, err := f.EventToRequestWithContext(ctx, req)
+func (f *FiberLambda) ProxyFunctionUrl(ctx context.Context, req events.LambdaFunctionURLRequest) (events.LambdaFunctionURLResponse, error) {
+	fiberRequest, err := f.fu.EventToRequestWithContext(ctx, req)
 	return f.proxyFunctionUrl(fiberRequest, err)
 }
 
