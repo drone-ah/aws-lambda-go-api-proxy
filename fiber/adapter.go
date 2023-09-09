@@ -8,6 +8,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"strings"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/awslabs/aws-lambda-go-api-proxy/core"
@@ -22,6 +23,7 @@ import (
 type FiberLambda struct {
 	core.RequestAccessor
 	v2  core.RequestAccessorV2
+	fu  core.RequestAccessor
 	app *fiber.App
 }
 
@@ -63,7 +65,7 @@ func (f *FiberLambda) ProxyWithContextV2(ctx context.Context, req events.APIGate
 }
 
 func ProxyFunctionUrl(ctx context.Context, req events.LambdaFunctionURLRequest) (events.LambdaFunctionURLResponse, error) {
-	fiberRequest, err := f.v2.EventToRequestWithContext(ctx, req)
+	fiberRequest, err := f.EventToRequestWithContext(ctx, req)
 	return f.proxyFunctionUrl(fiberRequest, err)
 }
 
@@ -150,12 +152,16 @@ func (f *FiberLambda) adaptor(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	remoteAddr, err := net.ResolveTCPAddr("tcp", r.RemoteAddr)
 	if err != nil {
 		http.Error(w, utils.StatusMessage(fiber.StatusInternalServerError), fiber.StatusInternalServerError)
 		return
 	}
-
+	// We need to make sure the net.ResolveTCPAddr call works as it expects a port
+	addrWithPort := r.RemoteAddr
+	if !strings.Contains(r.RemoteAddr, ":") {
+		addrWithPort = r.RemoteAddr + ":80" // assuming a default port
+	}
+	remoteAddr, err := net.ResolveTCPAddr("tcp", addrWithPort)
 	// New fasthttp Ctx
 	var fctx fasthttp.RequestCtx
 	fctx.Init(req, remoteAddr, nil)
